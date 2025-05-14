@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskMate - Daily Planner</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #f4f4f4; }
+        .form-group { margin-bottom: 10px; }
+        label { display: inline-block; width: 100px; }
+        input[type="text"] { width: 200px; }
+        button { padding: 6px 12px; margin-right: 5px; }
+    </style>
+</head>
+<body>
+    <h1>TaskMate - Daily Planner</h1>
+
+    <div class="form">
+        <div class="form-group">
+            <label for="task">Task:</label>
+            <input type="text" id="task">
+        </div>
+        <div class="form-group">
+            <label for="category">Category:</label>
+            <input type="text" id="category">
+        </div>
+        <div class="form-group">
+            <label for="due">Due (yyyy-MM-dd HH:mm):</label>
+            <input type="text" id="due">
+        </div>
+        <button onclick="addTask()">Add Task</button>
+        <button onclick="deleteTask()">Delete Selected Task</button>
+    </div>
+
+    <table id="taskTable">
+        <thead>
+            <tr>
+                <th>Task</th>
+                <th>Category</th>
+                <th>Due</th>
+                <th>Select</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
+        const STORAGE_KEY = 'taskMateTasks';
+
+        function loadTasks() {
+            const tasks = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+            tasks.forEach(({ task, category, due }) => {
+                insertTaskRow(task, category, due);
+                scheduleReminder(task, due);
+            });
+        }
+
+        function saveTasks() {
+            const table = document.getElementById('taskTable').getElementsByTagName('tbody')[0];
+            const tasks = [];
+            for (let i = 0; i < table.rows.length; i++) {
+                const row = table.rows[i];
+                tasks.push({
+                    task: row.cells[0].innerText,
+                    category: row.cells[1].innerText,
+                    due: row.cells[2].innerText
+                });
+            }
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+        }
+
+        function insertTaskRow(task, category, due) {
+            const table = document.getElementById('taskTable').getElementsByTagName('tbody')[0];
+            const row = table.insertRow();
+
+            row.insertCell(0).innerText = task;
+            row.insertCell(1).innerText = category;
+            row.insertCell(2).innerText = due;
+
+            const selectCell = row.insertCell(3);
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            selectCell.appendChild(checkbox);
+        }
+
+        function addTask() {
+            const task = document.getElementById('task').value;
+            const category = document.getElementById('category').value;
+            const due = document.getElementById('due').value;
+
+            if (!task || !category || !due) {
+                alert('Please fill out all fields.');
+                return;
+            }
+
+            insertTaskRow(task, category, due);
+            scheduleReminder(task, due);
+            saveTasks();
+
+            document.getElementById('task').value = '';
+            document.getElementById('category').value = '';
+            document.getElementById('due').value = '';
+        }
+
+        function deleteTask() {
+            const table = document.getElementById('taskTable').getElementsByTagName('tbody')[0];
+            for (let i = table.rows.length - 1; i >= 0; i--) {
+                const row = table.rows[i];
+                const checkbox = row.cells[3].getElementsByTagName('input')[0];
+                if (checkbox && checkbox.checked) {
+                    table.deleteRow(i);
+                }
+            }
+            saveTasks();
+        }
+
+        function scheduleReminder(task, dueStr) {
+            const due = new Date(dueStr.replace(' ', 'T'));
+            const now = new Date();
+            const delay = due.getTime() - now.getTime();
+            if (delay > 0) {
+                setTimeout(() => {
+                    alert(`Reminder: Task due - ${task}`);
+                }, delay);
+            }
+        }
+
+        window.onload = loadTasks;
+    </script>
+</body>
+</html>
